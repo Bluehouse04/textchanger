@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>정규식 & 단어 교환 텍스트 변환기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        /* 셀렉트 박스 화살표 스타일 조정 */
+        select {
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1em;
+        }
+    </style>
+</head>
+<body class="p-6 min-h-screen flex flex-col items-center">
+
+    <div class="w-full max-w-4xl bg-[#1e1e1e] p-6 rounded-xl shadow-xl border border-[#2d2d2d]">
+        <h1 class="text-xl font-bold mb-6 text-white flex items-center gap-2">
+            ✨ 텍스트 변환 & 상호 교환기
+        </h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label class="block text-sm font-medium mb-2 text-gray-400">원본 텍스트 입력</label>
+                <textarea id="inputText" class="w-full h-60 p-4 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg text-white focus:outline-none focus:border-blue-500 resize-none" placeholder="여기에 변환할 텍스트를 붙여넣으세요..."></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2 text-gray-400">변환된 결과</label>
+                <textarea id="outputText" readonly class="w-full h-60 p-4 bg-[#252525] border border-[#353535] rounded-lg text-gray-300 focus:outline-none resize-none" placeholder="변환 버튼을 누르면 결과가 여기에 표시됩니다..."></textarea>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-sm font-medium text-gray-400">변환 규칙 설정 (정규식 및 상호 교환 가능)</span>
+                <button onclick="addRule()" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded transition">
+                    + 규칙 추가
+                </button>
+            </div>
+            
+            <div id="rulesContainer" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                <div class="flex items-center gap-3 rule-row">
+                    <input type="text" class="find-input flex-1 p-2.5 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg text-white placeholder-gray-500 text-sm" placeholder="단어 A" value="NPC">
+                    
+                    <select class="mode-select bg-[#2a2a2a] border border-[#3f3f3f] text-gray-300 rounded-lg p-2.5 text-sm font-bold text-center w-24 appearance-none cursor-pointer focus:outline-none focus:border-blue-500">
+                        <option value="swap" selected>⇄ 교환</option>
+                        <option value="replace">➔ 치환</option>
+                    </select>
+
+                    <input type="text" class="replace-input flex-1 p-2.5 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg text-white placeholder-gray-500 text-sm" placeholder="단어 B" value="PC">
+                    
+                    <button onclick="deleteRule(this)" class="p-2 text-gray-400 hover:text-red-500 transition" title="삭제">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="rulesContainer" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                <div class="flex items-center gap-3 rule-row">
+                    <input type="text" class="find-input flex-1 p-2.5 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg text-white placeholder-gray-500 text-sm" placeholder="단어 A" value="npc">
+                    
+                    <select class="mode-select bg-[#2a2a2a] border border-[#3f3f3f] text-gray-300 rounded-lg p-2.5 text-sm font-bold text-center w-24 appearance-none cursor-pointer focus:outline-none focus:border-blue-500">
+                        <option value="swap" selected>⇄ 교환</option>
+                        <option value="replace">➔ 치환</option>
+                    </select>
+
+                    <input type="text" class="replace-input flex-1 p-2.5 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg text-white placeholder-gray-500 text-sm" placeholder="단어 B" value="pc">
+                    
+                    <button onclick="deleteRule(this)" class="p-2 text-gray-400 hover:text-red-500 transition" title="삭제">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="rulesContainer" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                <div class="flex items-center gap-3 rule-row">
+                    <input type="text" class="find-input flex-1 p-2.5 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg text-white placeholder-gray-500 text-sm" placeholder="단어 A" value="롤플레잉">
+                    
+                    <select class="mode-select bg-[#2a2a2a] border border-[#3f3f3f] text-gray-300 rounded-lg p-2.5 text-sm font-bold text-center w-24 appearance-none cursor-pointer focus:outline-none focus:border-blue-500">
+                        <option value="swap">⇄ 교환</option>
+                        <option value="replace" selected>➔ 치환</option>
+                    </select>
+
+                    <input type="text" class="replace-input flex-1 p-2.5 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg text-white placeholder-gray-500 text-sm" placeholder="단어 B" value="대화">
+                    
+                    <button onclick="deleteRule(this)" class="p-2 text-gray-400 hover:text-red-500 transition" title="삭제">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="rulesContainer" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                <div class="flex items-center gap-3 rule-row">
+                    <input type="text" class="find-input flex-1 p-2.5 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg text-white placeholder-gray-500 text-sm" placeholder="단어 A" value="rp">
+                    
+                    <select class="mode-select bg-[#2a2a2a] border border-[#3f3f3f] text-gray-300 rounded-lg p-2.5 text-sm font-bold text-center w-24 appearance-none cursor-pointer focus:outline-none focus:border-blue-500">
+                        <option value="swap">⇄ 교환</option>
+                        <option value="replace" selected>➔ 치환</option>
+                    </select>
+
+                    <input type="text" class="replace-input flex-1 p-2.5 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg text-white placeholder-gray-500 text-sm" placeholder="단어 B" value="대화">
+                    
+                    <button onclick="deleteRule(this)" class="p-2 text-gray-400 hover:text-red-500 transition" title="삭제">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-4">
+            <button onclick="convertText()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition shadow-lg">
+                텍스트 변환하기
+            </button>
+            <button onclick="copyToClipboard()" class="px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold rounded-lg transition">
+                결과 복사
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 규칙 행 추가
+        function addRule() {
+            const container = document.getElementById('rulesContainer');
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-3 rule-row';
+            row.innerHTML = `
+                <input type="text" class="find-input flex-1 p-2.5 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg text-white placeholder-gray-500 text-sm" placeholder="단어 A">
+                <select class="mode-select bg-[#2a2a2a] border border-[#3f3f3f] text-gray-300 rounded-lg p-2.5 text-sm font-bold text-center w-24 appearance-none cursor-pointer focus:outline-none focus:border-blue-500">
+                    <option value="replace" selected>➔ 치환</option>
+                    <option value="swap">⇄ 교환</option>
+                </select>
+                <input type="text" class="replace-input flex-1 p-2.5 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg text-white placeholder-gray-500 text-sm" placeholder="단어 B">
+                <button onclick="deleteRule(this)" class="p-2 text-gray-400 hover:text-red-500 transition" title="삭제">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            `;
+            container.appendChild(row);
+        }
+
+        // 규칙 행 삭제
+        function deleteRule(button) {
+            button.closest('.rule-row').remove();
+        }
+
+        // 정규식 특수문자 이스케이프 함수 (안전한 매칭용)
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // 핵심 변환 로직
+        function convertText() {
+            let text = document.getElementById('inputText').value;
+            const rows = document.querySelectorAll('.rule-row');
+
+            rows.forEach(row => {
+                const wordA = row.querySelector('.find-input').value;
+                const wordB = row.querySelector('.replace-input').value;
+                const mode = row.querySelector('.mode-select').value;
+
+                if (!wordA) return; // 찾을 단어가 없으면 스킵
+
+                if (mode === 'swap') {
+                    // [상호 교환 모드]
+                    if (!wordB) return; 
+
+                    // 글자 글자 분해 매칭 시 오류 방지를 위해 긴 단어가 정규식 앞쪽에 오도록 정렬
+                    // 예: 'PC'와 'NPC'가 있을 때 'NPC|PC' 순서여야 'NPC' 내부의 'PC'를 오인하지 않음
+                    const sorted = [wordA, wordB].sort((a, b) => b.length - a.length);
+                    const regex = new RegExp(`${escapeRegExp(sorted[0])}|${escapeRegExp(sorted[1])}`, 'g');
+
+                    // 동시 치환 기법 실행
+                    text = text.replace(regex, (match) => {
+                        return match === wordA ? wordB : wordA;
+                    });
+
+                } else {
+                    // [일반 치환 모드]
+                    try {
+                        const regex = new RegExp(wordA, 'g');
+                        text = text.replace(regex, wordB);
+                    } catch (e) {
+                        // 정규식 문법 에러 발생 시 일반 텍스트 치환으로 우회
+                        text = text.split(wordA).join(wordB);
+                    }
+                }
+            });
+
+            document.getElementById('outputText').value = text;
+        }
+
+        // 결과 복사
+        function copyToClipboard() {
+            const outputText = document.getElementById('outputText');
+            if (!outputText.value) {
+                alert('복사할 결과가 없습니다.');
+                return;
+            }
+            outputText.select();
+            document.execCommand('copy');
+            alert('클립보드에 복사되었습니다!');
+        }
+    </script>
+</body>
+</html>
